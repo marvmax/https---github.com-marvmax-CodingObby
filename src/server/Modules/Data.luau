@@ -4,4 +4,102 @@ local dataStore = dataService:GetDataStore("PlayerData")
 local sessionData = {}
 local dataMod = {}
 
+local defalutData = {
+	Coins = 0,
+	Level = 1,
+}
+
+dataMod.load = function(player)
+	local key = player.UserId
+	local data = sessionData[key]
+	return data
+end
+
+dataMod.setupData = function(player)
+	local key = player.UserId
+	local data = dataMod.load(player)
+
+	sessionData[key] = shared.mod("Utilities").recursiveCopy(defalutData)
+
+	if data then
+		for i, v in data do
+			dataMod.set()
+			print(i, v)
+			dataMod.set(player, i, v)
+		end
+		print("Data loaded for player: " .. player.Name)
+	else
+		print(player.Name .. " is a new player!")
+	end
+end
+
+dataMod.set = function(player, stat, value)
+	local key = player.UserId
+	sessionData[key][stat] = value
+	local statVal = player.leaderstats:FindFirstChild(stat)
+	if statVal then
+		statVal.Value = value
+	end
+end
+
+dataMod.get = function(player, stat)
+	local key = player.UserId
+	return sessionData[key][stat]
+end
+
+dataMod.increment = function(player, stat, value)
+	local key = player.UserId
+	sessionData[key][stat] = sessionData[key][stat] + value
+	local statVal = player.leaderstats:FindFirstChild(stat)
+	if statVal then
+		statVal.Value = dataMod.get(player, stat)
+	end
+end
+
+dataMod.save = function(player)
+	if not player:GetAttribute("DataLoaded") then
+		return
+	end
+
+	local key = player.UserId
+	local data = sessionData[key]
+
+	local success, err = shared.mod("Utilities").promiseReturn(1, function()
+		dataStore:SetAsync(key, data)
+	end)
+
+	if success then
+		print("Data saved for player: " .. player.Name)
+	else
+		warn("Failed to save data for player: " .. player.Name .. ". Error: " .. err)
+	end
+end
+
+dataMod.remove = function(player)
+	local key = player.UserId
+	sessionData[key] = nil
+	print("Data removed for player: " .. player.Name)
+end
+
+playerService.PlayerAdded:Connect(function(player)
+	local folder = Instance.new("Folder")
+	folder.Name = "leaderstats"
+	folder.Parent = player
+	local coins = Instance.new("IntValue")
+	coins.Name = "Coins"
+	coins.Parent = folder
+	coins.Value = defalutData.Coins
+	local stage = Instance.new("IntValue")
+	stage.Name = "Stage"
+	stage.Parent = folder
+	stage.Value = defalutData.Level
+
+	dataMod.setupData(player)
+end)
+
+playerService.PlayerRemoving:Connect(function(player)
+	dataMod.save(player)
+	dataMod.remove(player)
+end)
+
 return dataMod
