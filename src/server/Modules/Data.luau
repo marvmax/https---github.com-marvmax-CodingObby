@@ -17,6 +17,12 @@ local defalutData = {
 	Level = 1,
 }
 
+-- what the heck is this
+
+dataMod.sayHello = function()
+	print("Hello from the Data module!")
+end
+
 dataMod.setupData = function(player)
 	local key = player.UserId
 	local data = dataMod.load(player)
@@ -80,16 +86,18 @@ end
 dataMod.load = function(player)
 	local key = player.UserId
 
-    local success, data = utilities.promiseReturn(1, function()
-        return dataStore:GetAsync(key)
-    end)
+	local success, data = utilities.promiseReturn(1, function()
+		return dataStore:GetAsync(key)
+	end)
 
-    if not success then
-        teleportService:Teleport(game.PlaceId, player)
-        return
+	if not success then
+		teleportService:Teleport(game.PlaceId, player)
+		return
+	end
+
 	local data = sessionData[key]
 
-    player:SetAttribute("DataLoaded", true) 
+	player:SetAttribute("DataLoaded", true)
 
 	return data
 end
@@ -101,29 +109,27 @@ dataMod.remove = function(player)
 end
 
 local function autoSave()
-    while task.wait(AUTOSAVE_INTERVAL) do
-        print("Auto-saving data for all players...")
-        for key, dataTablex in sessionData do
-            local player = playerService:GetPlayerByUserId(key)
-            dataMod.save(player)
-        end
-    end
+	while task.wait(AUTOSAVE_INTERVAL) do
+		print("Auto-saving data for all players...")
+		for key, dataTablex in sessionData do
+			local player = playerService:GetPlayerByUserId(key)
+			dataMod.save(player)
+		end
+	end
 end
 
 task.spawn(autoSave) --Initialize auto-save loop
 
 game:BindToClose(function()
-    print("Game is closing. Saving data for all players...")
-    for key, player in playerService:GetPlayers() do
-        dataMod.save(player)
-        player:Kick("Shutting down game. All data saved")
-    end
-    
+	print("Game is closing. Saving data for all players...")
+	for key, player in playerService:GetPlayers() do
+		dataMod.save(player)
+		player:Kick("Shutting down game. All data saved")
+	end
 end)
 
-
-
 playerService.PlayerAdded:Connect(function(player)
+	print("Player joined: " .. player.Name)
 	local folder = Instance.new("Folder")
 	folder.Name = "leaderstats"
 	folder.Parent = player
