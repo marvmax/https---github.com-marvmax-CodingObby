@@ -1,25 +1,27 @@
+-- Services
 local playerService = game:GetService("Players")
 local dataService = game:GetService("DataStoreService")
 local dataStore = dataService:GetDataStore("PlayerData")
+local teleportService = game:GetService("TeleportService")
+
+-- Modules
+local utilities = require(script.Parent.Utilities)
+
+--Variables
 local sessionData = {}
 local dataMod = {}
+local AUTOSAVE_INTERVAL = 120 -- seconds
 
 local defalutData = {
 	Coins = 0,
 	Level = 1,
 }
 
-dataMod.load = function(player)
-	local key = player.UserId
-	local data = sessionData[key]
-	return data
-end
-
 dataMod.setupData = function(player)
 	local key = player.UserId
 	local data = dataMod.load(player)
 
-	sessionData[key] = shared.mod("Utilities").recursiveCopy(defalutData)
+	sessionData[key] = utilities.recursiveCopy(defalutData)
 
 	if data then
 		for i, v in data do
@@ -64,7 +66,7 @@ dataMod.save = function(player)
 	local key = player.UserId
 	local data = sessionData[key]
 
-	local success, err = shared.mod("Utilities").promiseReturn(1, function()
+	local success, err = utilities.promiseReturn(1, function()
 		dataStore:SetAsync(key, data)
 	end)
 
@@ -75,11 +77,51 @@ dataMod.save = function(player)
 	end
 end
 
+dataMod.load = function(player)
+	local key = player.UserId
+
+    local success, data = utilities.promiseReturn(1, function()
+        return dataStore:GetAsync(key)
+    end)
+
+    if not success then
+        teleportService:Teleport(game.PlaceId, player)
+        return
+	local data = sessionData[key]
+
+    player:SetAttribute("DataLoaded", true) 
+
+	return data
+end
+
 dataMod.remove = function(player)
 	local key = player.UserId
 	sessionData[key] = nil
 	print("Data removed for player: " .. player.Name)
 end
+
+local function autoSave()
+    while task.wait(AUTOSAVE_INTERVAL) do
+        print("Auto-saving data for all players...")
+        for key, dataTablex in sessionData do
+            local player = playerService:GetPlayerByUserId(key)
+            dataMod.save(player)
+        end
+    end
+end
+
+task.spawn(autoSave) --Initialize auto-save loop
+
+game:BindToClose(function()
+    print("Game is closing. Saving data for all players...")
+    for key, player in playerService:GetPlayers() do
+        dataMod.save(player)
+        player:Kick("Shutting down game. All data saved")
+    end
+    
+end)
+
+
 
 playerService.PlayerAdded:Connect(function(player)
 	local folder = Instance.new("Folder")
