@@ -1,6 +1,6 @@
 local utilities = {}
 
-utilities.recursiveCopy = function(source, destination)
+utilities.recursiveCopy = function(dataTable)
 	local tableCopy = {}
 	for index, value in dataTable do
 		if type(value) == "table" then
@@ -12,6 +12,7 @@ utilities.recursiveCopy = function(source, destination)
 end
 
 utilities.promiseReturn = function(maxRetries, callback, retries, err)
+	print("utilities.promiseReturn called with maxRetries:", maxRetries, "retries:", retries, "err:", err)
 	if maxRetries and not retries then
 		retries = 0
 	elseif retries and retries >= maxRetries then

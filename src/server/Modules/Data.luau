@@ -24,6 +24,7 @@ dataMod.sayHello = function()
 end
 
 dataMod.setupData = function(player)
+	print("Setting up data for player: " .. player.Name)
 	local key = player.UserId
 	local data = dataMod.load(player)
 
@@ -32,8 +33,9 @@ dataMod.setupData = function(player)
 	if data then
 		for i, v in data do
 			dataMod.set()
-			print(i, v)
+			print("Set is passed no data first time")
 			dataMod.set(player, i, v)
+			print("Data is being loaded for player: " .. player.Name .. ", stat: " .. i .. ", value: " .. v)
 		end
 		print("Data loaded for player: " .. player.Name)
 	else
@@ -42,6 +44,7 @@ dataMod.setupData = function(player)
 end
 
 dataMod.set = function(player, stat, value)
+	print("setting data for player: " .. player.Name .. ", stat: " .. stat .. ", value: " .. value)
 	local key = player.UserId
 	sessionData[key][stat] = value
 	local statVal = player.leaderstats:FindFirstChild(stat)
@@ -65,6 +68,7 @@ dataMod.increment = function(player, stat, value)
 end
 
 dataMod.save = function(player)
+	print("Saving data for player: " .. player.Name)
 	if not player:GetAttribute("DataLoaded") then
 		return
 	end
@@ -84,6 +88,7 @@ dataMod.save = function(player)
 end
 
 dataMod.load = function(player)
+	print("Loading data for player: " .. player.Name)
 	local key = player.UserId
 
 	local success, data = utilities.promiseReturn(1, function()
@@ -121,7 +126,7 @@ end
 task.spawn(autoSave) --Initialize auto-save loop
 
 game:BindToClose(function()
-	print("Game is closing. Saving data for all players...")
+	print("Msg from BindToClose: Game is closing. Saving data for all players...")
 	for key, player in playerService:GetPlayers() do
 		dataMod.save(player)
 		player:Kick("Shutting down game. All data saved")
@@ -146,6 +151,7 @@ playerService.PlayerAdded:Connect(function(player)
 end)
 
 playerService.PlayerRemoving:Connect(function(player)
+	print("Player leaving (hopefully he died): " .. player.Name)
 	dataMod.save(player)
 	dataMod.remove(player)
 end)
